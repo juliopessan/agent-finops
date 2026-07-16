@@ -34,3 +34,10 @@ conn.commit()
 EOF
 ```
 Status válidos: `draft` → `validated` (gates 1–2 ok) → `production` (gate 3 ok) → `deprecated`.
+
+## 5. Sincronizar inventário
+
+Para descobrir e registrar automaticamente agentes novos nos projetos (entram como `draft`):
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/sync_registry.py <raiz-dos-projetos> --owner <nome>
+```

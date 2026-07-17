@@ -1,22 +1,31 @@
 # agent-finops
 
-> O painel de controle que faltava para quem tem agentes de IA espalhados por vários projetos.
+### Você sabe quanto seus agentes de IA custam este mês? Nem eu sabia.
 
-## A história
+Rodei o diagnóstico no meu próprio ecossistema de projetos e o número que voltou foi **US$ 291,61 em 30 dias**, escondido atrás de 6 modelos diferentes, sem nenhum aviso, sem nenhum dashboard — só uma pilha de sessões que ninguém tinha somado. E os agentes que geraram esse gasto? **32 deles**, espalhados por 8 projetos, e nenhum passava por um processo formal antes de ir pra produção.
 
-Em algum momento você percebeu: tem agentes de IA rodando em quase todo projeto seu — chatbot no WhatsApp, review de arquitetura, migração de dados, SDK de requirements. Cada um com seu próprio agente, seu próprio modelo, sua própria fatura silenciosa somando no fim do mês.
+---
 
-O problema não é *ter* agentes. É não saber **quanto cada um custa, se está usando o modelo certo, e se o que ele produz é confiável o suficiente para ir pra produção**. Sem essa visibilidade, toda decisão vira palpite: "acho que o Orion está caro", "acho que aquele agente do migrateiq tá bom pra produção". Achismo não escala.
+Se isso soa familiar, não é coincidência. É o estágio natural de qualquer time que adotou IA rápido demais pra parar e organizar a casa: cada projeto ganha seu agente, cada agente ganha seu modelo, e ninguém mais sabe responder duas perguntas simples — **quanto isso custa** e **isso está pronto pra rodar sem supervisão**? Achismo não escala, e "acho que está caro" não é uma métrica.
 
-Rodamos o primeiro diagnóstico neste próprio ecossistema e o retrato apareceu na hora: **US$ 291,61 gastos em 30 dias**, espalhados por 6 modelos diferentes, com o Fable 5 sozinho respondendo por **US$ 94** — maior custo, mas não necessariamente o culpado, porque volume de mensagens (não o modelo) é que dominava a conta. Ao mesmo tempo, um inventário automático descobriu **32 agentes** perdidos entre 8 projetos, nenhum deles com um processo formal de "isso está pronto pra produção".
+---
 
-`agent-finops` nasceu para resolver isso: **medir o custo real de cada agente e garantir que o código que ele produz é confiável antes de virar produção** — as duas faces da mesma moeda, FinOps (quanto custa) e Agent OPS (o que garante qualidade).
+`agent-finops` é o painel de controle que faltava: um plugin que **mede o custo real de cada agente** (tokens de verdade, não estimativa) e **garante que o código que ele produz passou por um portão de qualidade** antes de virar produção — as duas faces da mesma moeda, FinOps (quanto custa) e Agent OPS (o que garante confiança). Ele não substitui seus agentes; ele te dá o instrumento de painel que estava faltando no cockpit.
+
+Por baixo do capô é simples de propósito: um hook captura cada chamada de ferramenta, um script lê os transcripts locais e extrai o consumo de tokens que de fato aconteceu — o `usage` que a API retornou, não uma conta de padaria —, e tudo cai num SQLite local. Nada sai da sua máquina; o painel é seu.
+
+O que ele resolve, na prática:
+
+- **Enxerga o gasto** — custo por projeto, por modelo, por dia, com recomendação de onde um modelo caro está rodando uma tarefa barata.
+- **Reduz o gasto** — busca estrutural via AST em vez de ler arquivos inteiros, mais compressão de contexto, medidas e registradas.
+- **Garante qualidade antes de produção** — sintaxe → testes → review arquitetural, um portão de verdade, não um "funcionou uma vez".
+- **Sabe quem são seus agentes** — inventário automático com lifecycle explícito, sem agente fantasma sem dono.
+
+**Instale agora e rode seu primeiro diagnóstico** — em 5 minutos você sabe exatamente quanto seus agentes estão custando este mês (veja *Instalação* abaixo). O resto deste README é o mapa técnico completo: anatomia, skills, e como cada camada funciona.
 
 ## O que é
 
-Um plugin do Claude Code — instalável em qualquer máquina, ativo em qualquer projeto — construído com a anatomia padrão de plugin (skills, agentes especializados, hooks e um store central). A diferença é o que ele observa: não o código que você escreve, mas o **comportamento e o custo dos agentes que escrevem código por você**.
-
-Por baixo do capô é simples de propósito: um hook captura cada chamada de ferramenta, um script real lê os transcripts do Claude Code e extrai o consumo de tokens que de fato aconteceu (não estimativa — o `usage` que a API retornou), e tudo cai num SQLite local (`~/.agent-finops/telemetry.db`). Nada sai da sua máquina.
+Um plugin do Claude Code — instalável em qualquer máquina, ativo em qualquer projeto — construído com a anatomia padrão de plugin (skills, agentes especializados, hooks e um store central). A diferença é o que ele observa: não o código que você escreve, mas o **comportamento e o custo dos agentes que escrevem código por você**. Os dados ficam em `~/.agent-finops/telemetry.db` — nada sai da sua máquina.
 
 ## O que faz
 

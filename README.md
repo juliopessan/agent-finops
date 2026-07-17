@@ -63,9 +63,10 @@ agent-finops/
 │   ├── compress         → Headroom (wrap/proxy/MCP) + registro de economia
 │   ├── code-nav         → AST: busca estrutural (ast-grep/tree-sitter)
 │   ├── safe-refactor    → AST: refatoração estrutural multi-arquivo
-│   └── agent-gate       → validação sintática pós-geração + lifecycle do registry
+│   ├── agent-gate       → validação sintática pós-geração + lifecycle do registry
+│   └── dashboard        → gera o dashboard HTML (design Avanade) a partir da telemetria
 ├── agents/          → cost-analyst, budget-guardian, agent-auditor
-├── dashboard/       → gerador de dashboard HTML self-contained
+├── dashboard/       → gerador de dashboard HTML self-contained (estilo Avanade)
 └── evals/           → gates de qualidade dos artefatos do plugin
 ```
 
@@ -95,7 +96,7 @@ python3 scripts/sync_registry.py <raiz> --owner eu  # inventário de agentes
 python3 dashboard/generate_dashboard.py             # dashboard HTML
 ```
 
-Ou pelas skills no Claude Code: `/cost-report`, `/rightsizing`, `/compress`, `/code-nav`, `/safe-refactor`, `/agent-gate`.
+Ou pelas skills no Claude Code: `/cost-report`, `/rightsizing`, `/compress`, `/code-nav`, `/safe-refactor`, `/agent-gate`, `/dashboard`.
 
 ## Camadas de economia (ordem de aplicação)
 

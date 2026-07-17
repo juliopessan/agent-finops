@@ -117,8 +117,8 @@ def main():
     <div class="section-bar"></div>
     <h2>Resumo</h2>
     <div class="stat-grid">
-      <div class="stat-tile"><div class="stat-value">US$$ $total</div><div class="stat-label">custo total</div></div>
-      <div class="stat-tile"><div class="stat-value">US$$ $saved</div><div class="stat-label">economia registrada</div></div>
+      <div class="stat-tile"><div class="stat-value">US$ $total</div><div class="stat-label">custo total</div></div>
+      <div class="stat-tile"><div class="stat-value">US$ $saved</div><div class="stat-label">economia registrada</div></div>
       <div class="stat-tile"><div class="stat-value">$len_by_project</div><div class="stat-label">projetos ativos</div></div>
       <div class="stat-tile"><div class="stat-value">$len_registry</div><div class="stat-label">agentes no registry</div></div>
     </div>
@@ -173,7 +173,7 @@ if(canvas&&L.length>0&&V.length>0){
 </script>
 </body>
 </html>""")
-    page = page.substitute(
+    page = page.safe_substitute(
         days=args.days,
         total=f"{total:.2f}",
         saved=f"{saved:.2f}",

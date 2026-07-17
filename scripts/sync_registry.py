@@ -2,7 +2,7 @@
 """Sincroniza o agent_registry com os agentes reais encontrados nos projetos.
 
 Varre um diretório raiz procurando definições de agentes:
-  - Markdown: **/agents/*.md e **/.claude/agents/*.md (formato Claude Code/hve-core)
+  - Markdown: **/agents/*.md e **/.claude/agents/*.md (formato Claude Code)
   - Python:   **/agents/*.py com classe/def de agente (heurística)
 
 Agentes novos entram como status='draft'; existentes têm project/model
@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "store"))
 import db  # noqa: E402
 
-SKIP_DIRS = {"node_modules", ".git", "__pycache__", "hve-core", ".venv", "venv", "dist", "build", "worktrees"}
+SKIP_DIRS = {"node_modules", ".git", "__pycache__", ".venv", "venv", "dist", "build", "worktrees"}
 MODEL_RE = re.compile(r"model:\s*([\w.\-]+)")
 
 

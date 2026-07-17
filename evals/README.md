@@ -1,6 +1,6 @@
-# Evals (padrão hve-core)
+# Evals
 
-Gates de qualidade dos artefatos do plugin, no espírito de `microsoft/hve-core/evals`:
+Gates de qualidade dos artefatos do plugin:
 
 - **skill-hygiene**: todo `SKILL.md` tem frontmatter `name`/`description` e comandos executáveis
 - **script-validation**: `python3 scripts/gate.py hooks/*.py store/*.py scripts/*.py dashboard/*.py` deve passar

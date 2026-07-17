@@ -14,7 +14,7 @@ Rodamos o primeiro diagnóstico neste próprio ecossistema e o retrato apareceu 
 
 ## O que é
 
-Um plugin do Claude Code — instalável em qualquer máquina, ativo em qualquer projeto — construído sobre a mesma anatomia usada pelo [hve-core](https://github.com/microsoft/hve-core) da Microsoft: skills, agentes especializados, hooks e um store central. A diferença é o que ele observa: não o código que você escreve, mas o **comportamento e o custo dos agentes que escrevem código por você**.
+Um plugin do Claude Code — instalável em qualquer máquina, ativo em qualquer projeto — construído com a anatomia padrão de plugin (skills, agentes especializados, hooks e um store central). A diferença é o que ele observa: não o código que você escreve, mas o **comportamento e o custo dos agentes que escrevem código por você**.
 
 Por baixo do capô é simples de propósito: um hook captura cada chamada de ferramenta, um script real lê os transcripts do Claude Code e extrai o consumo de tokens que de fato aconteceu (não estimativa — o `usage` que a API retornou), e tudo cai num SQLite local (`~/.agent-finops/telemetry.db`). Nada sai da sua máquina.
 
@@ -57,7 +57,7 @@ agent-finops/
 │   └── agent-gate       → validação sintática pós-geração + lifecycle do registry
 ├── agents/          → cost-analyst, budget-guardian, agent-auditor
 ├── dashboard/       → gerador de dashboard HTML self-contained
-└── evals/           → gates de qualidade (padrão hve-core)
+└── evals/           → gates de qualidade dos artefatos do plugin
 ```
 
 ## Instalação

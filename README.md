@@ -18,7 +18,7 @@ O que ele resolve, na prática:
 
 - **Enxerga o gasto** — custo por projeto, por modelo, por dia, com recomendação de onde um modelo caro está rodando uma tarefa barata.
 - **Reduz o gasto** — busca estrutural via AST (Abstract Syntax Tree, ou Árvore de Sintaxe Abstrata) em vez de ler arquivos inteiros, mais compressão de contexto, medidas e registradas.
-- **Garante qualidade antes de produção** — sintaxe → testes → review arquitetural, um portão de verdade, não um "funcionou uma vez".
+- **Garante qualidade antes de produção** — sintaxe (AST) → testes, um portão de verdade, não um "funcionou uma vez".
 - **Sabe quem são seus agentes** — inventário automático com lifecycle explícito, sem agente fantasma sem dono.
 
 **Instale agora e rode seu primeiro diagnóstico** — em 5 minutos você sabe exatamente quanto seus agentes estão custando este mês (veja *Instalação* abaixo). O resto deste README é o mapa técnico completo: anatomia, skills, e como cada camada funciona.
@@ -35,7 +35,7 @@ Um plugin do Claude Code — instalável em qualquer máquina, ativo em qualquer
 - `code-nav` e `safe-refactor` usam AST (ast-grep/tree-sitter) para o agente *ler menos* — busca estrutural em vez de abrir arquivos inteiros;
 - `compress` conecta o [Headroom](https://github.com/chopratejas/headroom), que comprime 60–95% do que sobra antes de chegar ao modelo.
 
-**Garante qualidade antes de ir pra produção.** `agent-gate` é o portão, em três etapas de natureza distinta: (1) validação sintática via **AST** — ast-grep/tree-sitter/parser nativo, determinístico, falha rápido sem custar uma rodada de testes; (2) a suíte de testes do projeto; (3) para mudanças arquiteturais relevantes, o veredito do [arch-review-assistant](https://github.com/juliopessan/arch-review-assistant) — um squad de 9 agentes LLM especializados em review arquitetural, **não** uma ferramenta de AST. Só depois das três etapas um agente sobe de status.
+**Garante qualidade antes de ir pra produção.** `agent-gate` é o portão: (1) validação sintática via **AST** — ast-grep/tree-sitter/parser nativo, determinístico, falha rápido sem custar uma rodada de testes; (2) a suíte de testes do projeto. Só depois das duas etapas um agente sobe de status no registry.
 
 **Sabe quem são seus agentes.** `sync_registry` varre seus projetos e popula um registro central com lifecycle explícito — `draft → validated → production → deprecated`. Nada de agente fantasma rodando sem dono.
 
@@ -47,7 +47,7 @@ Um plugin do Claude Code — instalável em qualquer máquina, ativo em qualquer
 |---|---|
 | "Acho que esse projeto está caro" | US$ exato por projeto, modelo e dia |
 | Modelo escolhido por hábito | Recomendação de rightsizing baseada em uso real |
-| Agente promovido a produção "porque funcionou uma vez" | Gate de 3 camadas: sintaxe → testes → review arquitetural |
+| Agente promovido a produção "porque funcionou uma vez" | Gate de 2 camadas: sintaxe (AST) → testes |
 | 32 agentes espalhados, ninguém sabe o inventário completo | Registry único, com status e dono |
 | Token gasto lendo arquivos inteiros | Busca estrutural via AST + compressão Headroom |
 
@@ -107,5 +107,5 @@ Ou pelas skills no Claude Code: `/cost-report`, `/rightsizing`, `/compress`, `/c
 ## Agent OPS
 
 - **Registry** de agentes com lifecycle `draft → validated → production → deprecated`
-- **agent-gate**: sintaxe (AST, determinístico) → testes → arch-review (squad LLM, não AST) → promoção
+- **agent-gate**: sintaxe (AST, determinístico) → testes → promoção
 - **agent-auditor**: inventário e conformidade dos agentes dos projetos

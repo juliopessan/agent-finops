@@ -35,7 +35,7 @@ Um plugin do Claude Code — instalável em qualquer máquina, ativo em qualquer
 - `code-nav` e `safe-refactor` usam AST (ast-grep/tree-sitter) para o agente *ler menos* — busca estrutural em vez de abrir arquivos inteiros;
 - `compress` conecta o [Headroom](https://github.com/chopratejas/headroom), que comprime 60–95% do que sobra antes de chegar ao modelo.
 
-**Garante qualidade antes de ir pra produção.** `agent-gate` é o portão: valida sintaticamente o código gerado (parse AST — falha rápido, sem custar uma rodada de testes), roda a suíte do projeto, e para mudanças arquiteturais relevantes, aciona o squad do [arch-review-assistant](https://github.com/juliopessan/arch-review-assistant) como terceiro gate. Só depois disso um agente sobe de status.
+**Garante qualidade antes de ir pra produção.** `agent-gate` é o portão, em três etapas de natureza distinta: (1) validação sintática via **AST** — ast-grep/tree-sitter/parser nativo, determinístico, falha rápido sem custar uma rodada de testes; (2) a suíte de testes do projeto; (3) para mudanças arquiteturais relevantes, o veredito do [arch-review-assistant](https://github.com/juliopessan/arch-review-assistant) — um squad de 9 agentes LLM especializados em review arquitetural, **não** uma ferramenta de AST. Só depois das três etapas um agente sobe de status.
 
 **Sabe quem são seus agentes.** `sync_registry` varre seus projetos e popula um registro central com lifecycle explícito — `draft → validated → production → deprecated`. Nada de agente fantasma rodando sem dono.
 
@@ -107,5 +107,5 @@ Ou pelas skills no Claude Code: `/cost-report`, `/rightsizing`, `/compress`, `/c
 ## Agent OPS
 
 - **Registry** de agentes com lifecycle `draft → validated → production → deprecated`
-- **agent-gate**: sintaxe (AST) → testes → arch-review → promoção
+- **agent-gate**: sintaxe (AST, determinístico) → testes → arch-review (squad LLM, não AST) → promoção
 - **agent-auditor**: inventário e conformidade dos agentes dos projetos

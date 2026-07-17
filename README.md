@@ -17,7 +17,7 @@ Por baixo do capô é simples de propósito: um hook captura cada chamada de fer
 O que ele resolve, na prática:
 
 - **Enxerga o gasto** — custo por projeto, por modelo, por dia, com recomendação de onde um modelo caro está rodando uma tarefa barata.
-- **Reduz o gasto** — busca estrutural via AST em vez de ler arquivos inteiros, mais compressão de contexto, medidas e registradas.
+- **Reduz o gasto** — busca estrutural via AST (Abstract Syntax Tree, ou Árvore de Sintaxe Abstrata) em vez de ler arquivos inteiros, mais compressão de contexto, medidas e registradas.
 - **Garante qualidade antes de produção** — sintaxe → testes → review arquitetural, um portão de verdade, não um "funcionou uma vez".
 - **Sabe quem são seus agentes** — inventário automático com lifecycle explícito, sem agente fantasma sem dono.
 

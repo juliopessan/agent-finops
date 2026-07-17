@@ -5,6 +5,8 @@ description: Quality gate de Agent OPS — valida sintaxe (AST) de código gerad
 
 # Agent Gate
 
+AST = Abstract Syntax Tree (Árvore de Sintaxe Abstrata). O gate 1 abaixo usa AST para validação determinística de sintaxe — sem LLM envolvido.
+
 ## 1. Gate sintático (sempre, antes de commit de código gerado)
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/gate.py <arquivos alterados>

@@ -5,6 +5,8 @@ description: Navegação estrutural de código via AST (ast-grep/tree-sitter) pa
 
 # Code Nav (AST)
 
+AST = Abstract Syntax Tree (Árvore de Sintaxe Abstrata): representação em árvore da estrutura lógica do código-fonte, usada aqui via ast-grep/tree-sitter para navegar com precisão sintática em vez de tratar o código como texto plano.
+
 Objetivo FinOps: substituir "ler arquivos inteiros" por consultas estruturais — menos tokens antes mesmo de compressão.
 
 ## Setup (uma vez por máquina)

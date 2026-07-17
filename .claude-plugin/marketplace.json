@@ -1,0 +1,11 @@
+{
+  "name": "agent-finops-marketplace",
+  "owner": { "name": "juliopessan" },
+  "plugins": [
+    {
+      "name": "agent-finops",
+      "source": "./",
+      "description": "Agent OPS + FinOps: telemetria de custo, otimização (AST/Headroom) e quality gates"
+    }
+  ]
+}

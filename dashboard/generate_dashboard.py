@@ -75,7 +75,7 @@ section .subtitle { font-size:14px; color:var(--ava-grey-60); margin-bottom:24px
 .ava-layer-metric b { font-size:20px; color:var(--ava-dark-orange); display:block; }
 .ava-layer-metric span { font-size:12px; color:var(--ava-grey-50); }
 
-.ava-stat-block { background:var(--ava-grey-80); color:#fff; border-radius:var(--ava-radius-lg); padding:42px 40px; box-shadow:var(--ava-shadow-lg); }
+.ava-stat-block { background:var(--ava-black); color:#fff; border-radius:var(--ava-radius-lg); padding:42px 40px; box-shadow:var(--ava-shadow-lg); }
 .ava-stat-block h3 { font-weight:300; font-size:22px; }
 .ava-stat-block h3 b { font-weight:700; color:var(--ava-solar); }
 .ava-stat-block .sub { color:var(--ava-grey-30); font-size:14px; margin:8px 0 32px; }
@@ -107,7 +107,7 @@ tr:hover td { background:var(--ava-grey-10); }
 .ava-roadmap-step h4 { font-weight:600; font-size:15px; color:var(--ava-grey-80); margin-bottom:4px; }
 .ava-roadmap-step p { font-size:13px; color:var(--ava-grey-60); margin:0; }
 
-.ava-footer { background:var(--ava-grey-80); color:var(--ava-grey-30); padding:48px 0 40px; margin-top:32px; }
+.ava-footer { background:var(--ava-black); color:var(--ava-grey-30); padding:48px 0 40px; margin-top:32px; }
 .ava-footer-top { display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:20px;
   padding-bottom:24px; border-bottom:1px solid var(--ava-grey-70); }
 .ava-footer-wordmark { color:#fff; font-weight:700; font-size:22px; }

@@ -1,4 +1,4 @@
-# agent-finops
+# agent-finops-ZWCA
 
 > **Zero-Waste Context Architecture (ZWCA) Runtime** — deterministic admission, context compression, model routing, token-budget enforcement and auditable Agent FinOps.
 

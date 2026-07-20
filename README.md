@@ -1,112 +1,360 @@
 # agent-finops
 
-### Você sabe quanto seus agentes de IA custam este mês? Nem eu sabia.
+> **Zero-Waste Context Architecture (ZWCA) Runtime** — deterministic admission, context compression, model routing, token-budget enforcement and auditable Agent FinOps.
 
-Rodei o diagnóstico no meu próprio ecossistema de projetos e o número que voltou foi **US$ 291,61 em 30 dias**, escondido atrás de 6 modelos diferentes, sem nenhum aviso, sem nenhum dashboard — só uma pilha de sessões que ninguém tinha somado. E os agentes que geraram esse gasto? **32 deles**, espalhados por 8 projetos, e nenhum passava por um processo formal antes de ir pra produção.
+`agent-finops` is a local-first plugin and runtime for controlling the cost, context and production readiness of AI agents. It unifies FinOps, context engineering, deterministic harnesses and runtime governance under one operating architecture.
 
----
+The central contract is simple:
 
-Se isso soa familiar, não é coincidência. É o estágio natural de qualquer time que adotou IA rápido demais pra parar e organizar a casa: cada projeto ganha seu agente, cada agente ganha seu modelo, e ninguém mais sabe responder duas perguntas simples — **quanto isso custa** e **isso está pronto pra rodar sem supervisão**? Achismo não escala, e "acho que está caro" não é uma métrica.
+> Every candidate token must pass three gates: **Admission** — does it deserve to enter? **Compression** — can it be smaller? **Audit** — did it generate accepted value?
 
----
+ZWCA does not promise zero token usage. It targets **zero unjustified or unaccounted token consumption**.
 
-`agent-finops` é o painel de controle que faltava: um plugin que **mede o custo real de cada agente** (tokens de verdade, não estimativa) e **garante que o código que ele produz passou por um portão de qualidade** antes de virar produção — as duas faces da mesma moeda, FinOps (quanto custa) e Agent OPS (o que garante confiança). Ele não substitui seus agentes; ele te dá o instrumento de painel que estava faltando no cockpit.
+## Why this exists
 
-Por baixo do capô é simples de propósito: um hook captura cada chamada de ferramenta, um script lê os transcripts locais e extrai o consumo de tokens que de fato aconteceu — o `usage` que a API retornou, não uma conta de padaria —, e tudo cai num SQLite local. Nada sai da sua máquina; o painel é seu.
+AI teams usually accumulate four disconnected capabilities:
 
-O que ele resolve, na prática:
+| Capability | What it solves | Typical gap |
+|---|---|---|
+| Cost strategy | Model tiers and theoretical savings | No runtime enforcement |
+| Context compression | Smaller prompts and retrieval payloads | No production observability |
+| Token monitoring | Cost and usage dashboards | Does not control context decisions |
+| Engineering harnesses | Deterministic validation and tests | Usually runs only after generation |
 
-- **Enxerga o gasto** — custo por projeto, por modelo, por dia, com recomendação de onde um modelo caro está rodando uma tarefa barata.
-- **Reduz o gasto** — busca estrutural via AST (Abstract Syntax Tree, ou Árvore de Sintaxe Abstrata) em vez de ler arquivos inteiros, mais compressão de contexto, medidas e registradas.
-- **Garante qualidade antes de produção** — sintaxe (AST) → testes, um portão de verdade, não um "funcionou uma vez".
-- **Sabe quem são seus agentes** — inventário automático com lifecycle explícito, sem agente fantasma sem dono.
+`agent-finops` turns those capabilities into one runtime. It decides whether an LLM is needed, builds the smallest defensible context, enforces hard budgets, validates the result and records the economic and quality outcome.
 
-**Instale agora e rode seu primeiro diagnóstico** — em 5 minutos você sabe exatamente quanto seus agentes estão custando este mês (veja *Instalação* abaixo). O resto deste README é o mapa técnico completo: anatomia, skills, e como cada camada funciona.
+## The four ZWCA planes
 
-## O que é
-
-Um plugin do Claude Code — instalável em qualquer máquina, ativo em qualquer projeto — construído com a anatomia padrão de plugin (skills, agentes especializados, hooks e um store central). A diferença é o que ele observa: não o código que você escreve, mas o **comportamento e o custo dos agentes que escrevem código por você**. Os dados ficam em `~/.agent-finops/telemetry.db` — nada sai da sua máquina.
-
-## O que faz
-
-**Enxerga o gasto.** `cost-report` cruza custo por projeto, por modelo, por dia — com os preços atuais direto da tabela oficial. `rightsizing` lê esse histórico e aponta, com números, onde um Opus está rodando uma tarefa de Haiku, onde o cache de prompt não está pegando, onde o volume já justifica a Batch API (-50%).
-
-**Reduz o gasto, não só relata.** Duas camadas de economia real, medidas e registradas:
-- `code-nav` e `safe-refactor` usam AST (ast-grep/tree-sitter) para o agente *ler menos* — busca estrutural em vez de abrir arquivos inteiros;
-- `compress` conecta o [Headroom](https://github.com/chopratejas/headroom), que comprime 60–95% do que sobra antes de chegar ao modelo.
-
-**Garante qualidade antes de ir pra produção.** `agent-gate` é o portão: (1) validação sintática via **AST** — ast-grep/tree-sitter/parser nativo, determinístico, falha rápido sem custar uma rodada de testes; (2) a suíte de testes do projeto. Só depois das duas etapas um agente sobe de status no registry.
-
-**Sabe quem são seus agentes.** `sync_registry` varre seus projetos e popula um registro central com lifecycle explícito — `draft → validated → production → deprecated`. Nada de agente fantasma rodando sem dono.
-
-**Mostra o quadro completo.** Um dashboard HTML autocontido (sem servidor, sem dependência externa) reúne custo, economia por camada e o registro de agentes numa página só.
-
-## O que resolve
-
-| Antes | Depois |
-|---|---|
-| "Acho que esse projeto está caro" | US$ exato por projeto, modelo e dia |
-| Modelo escolhido por hábito | Recomendação de rightsizing baseada em uso real |
-| Agente promovido a produção "porque funcionou uma vez" | Gate de 2 camadas: sintaxe (AST) → testes |
-| 32 agentes espalhados, ninguém sabe o inventário completo | Registry único, com status e dono |
-| Token gasto lendo arquivos inteiros | Busca estrutural via AST + compressão Headroom |
-
-## Anatomia
-
+```text
+┌──────────────────────────────────────────────────────────────┐
+│  PLANE 4 — GOVERNANCE & OBSERVABILITY                       │
+│  Budget enforcement · Waste Ledger · Drift alerts · FinOps  │
+├──────────────────────────────────────────────────────────────┤
+│  PLANE 3 — DECISION                                          │
+│  Complexity score · Thermal tier · Model routing · Approval  │
+├──────────────────────────────────────────────────────────────┤
+│  PLANE 2 — CONTEXT                                           │
+│  AST admission · CCE retrieval · Graph context · Headroom    │
+├──────────────────────────────────────────────────────────────┤
+│  PLANE 1 — DETERMINISTIC FLOOR                               │
+│  Everything that does not require an LLM executes here       │
+└──────────────────────────────────────────────────────────────┘
 ```
+
+### 1. Deterministic Floor
+
+AST parsing, symbol lookup, exact mappings, renames, one-to-one DDL translations, validation and other deterministic transformations execute without an LLM whenever possible.
+
+This is **token avoidance**, not token compression.
+
+### 2. Context Plane
+
+For tasks that genuinely require a model, the runtime assembles the minimum sufficient context using structural navigation, retrieval, persistent caching and compression.
+
+### 3. Decision Plane
+
+A deterministic `complexity_score` maps each artifact to a Thermal Gradient tier and its associated model class, context budget and approval policy.
+
+**No score, no model call.**
+
+### 4. Governance & Observability
+
+The Guardian enforces hard caps before a provider call. Every decision is recorded in the Waste Ledger, including rejected tokens, transmitted tokens, cost, quality outcome and evidence basis.
+
+## Three runtime gates
+
+### Admission Gate
+
+Determines whether the task:
+
+- can be completed deterministically;
+- requires an LLM;
+- has a valid complexity score;
+- has sufficient structural evidence to proceed.
+
+### Compression Gate
+
+Builds and reduces the context package through:
+
+- AST-aware navigation;
+- CCE retrieval;
+- dependency and graph filtering;
+- cache reuse;
+- Headroom compression;
+- tier-specific context profiles.
+
+### Audit Gate
+
+Records whether the admitted and transmitted tokens produced accepted value. The audit event includes cost, quality-gate status, model tier, budget compliance and savings evidence.
+
+## Thermal Gradient × RTK dispatch
+
+The initial policy defines six execution tiers:
+
+| Tier | Score | Execution policy |
+|---|---:|---|
+| **Solar** | 0–15 | Deterministic, zero-token execution |
+| **Daylight** | 16–30 | Small model, tightly constrained context |
+| **Horizon** | 31–45 | Small or medium model |
+| **Twilight** | 46–60 | Reasoning-capable model |
+| **Starlight** | 61–80 | Advanced reasoning with approval controls |
+| **Aurora** | 81–100 | Frontier model, maximum budget, mandatory approval |
+
+The policy is defined in [`config/zwca-dispatch.yaml`](config/zwca-dispatch.yaml). Initial thresholds and token caps are calibration defaults and must be validated against a representative artifact corpus before production certification.
+
+## Runtime flow
+
+```mermaid
+flowchart TD
+    A[Artifact or task] --> B[Structural feature extraction]
+    B --> C[Deterministic complexity score]
+    C --> D{Resolvable without LLM?}
+    D -->|Yes| E[Solar deterministic execution]
+    D -->|No| F[Minimum context manifest]
+    F --> G[AST / CCE / Graph retrieval]
+    G --> H[Headroom compression]
+    H --> I{Within tier hard cap?}
+    I -->|No| J[Re-compress or require approval]
+    I -->|Yes| K[RTK model dispatch]
+    J --> H
+    K --> L[Generation]
+    L --> M[AST + tests + quality gate]
+    E --> N[Waste Ledger]
+    M --> N
+    N --> O[Cost, quality and drift reporting]
+```
+
+## What is already implemented
+
+- Real token usage ingestion from local transcripts;
+- SQLite telemetry and pricing store;
+- cost reporting by project, model and period;
+- model rightsizing recommendations;
+- AST-based code navigation and safe refactoring;
+- Headroom context compression integration;
+- syntax and test gates before production promotion;
+- agent registry with explicit lifecycle;
+- self-contained HTML dashboard;
+- canonical ZWCA blueprint;
+- six-tier dispatch policy;
+- Waste Ledger JSON Schema;
+- deterministic structural complexity scorer;
+- tier-boundary tests;
+- unified `/zwca` skill contract.
+
+## Repository anatomy
+
+```text
 agent-finops/
-├── hooks/           → telemetria: cada tool call vira evento (PostToolUse)
-├── store/           → SQLite central (~/.agent-finops/telemetry.db) + ingest de transcripts + pricing
+├── hooks/                    # tool-call telemetry and runtime interception
+├── store/                    # SQLite, transcript ingestion and pricing
+├── config/
+│   └── zwca-dispatch.yaml    # Thermal Gradient × RTK policy
+├── schemas/
+│   └── waste-ledger.schema.json
+├── scripts/
+│   ├── zwca_score.py         # deterministic complexity scoring
+│   ├── cost_report.py
+│   ├── rightsizing.py
+│   ├── gate.py
+│   └── sync_registry.py
 ├── skills/
-│   ├── cost-report      → FinOps: custo × projeto × modelo × período
-│   ├── rightsizing      → recomendações de modelo/caching/batch
-│   ├── compress         → Headroom (wrap/proxy/MCP) + registro de economia
-│   ├── code-nav         → AST: busca estrutural (ast-grep/tree-sitter)
-│   ├── safe-refactor    → AST: refatoração estrutural multi-arquivo
-│   ├── agent-gate       → validação sintática pós-geração + lifecycle do registry
-│   └── dashboard        → gera o dashboard HTML (design Avanade) a partir da telemetria
-├── agents/          → cost-analyst, budget-guardian, agent-auditor
-├── dashboard/       → gerador de dashboard HTML self-contained (estilo Avanade)
-└── evals/           → gates de qualidade dos artefatos do plugin
+│   ├── zwca/                 # unified runtime workflow
+│   ├── cost-report/
+│   ├── rightsizing/
+│   ├── compress/
+│   ├── code-nav/
+│   ├── safe-refactor/
+│   ├── agent-gate/
+│   └── dashboard/
+├── agents/                   # cost analyst, budget guardian, agent auditor
+├── dashboard/                # self-contained HTML dashboard generator
+├── docs/
+│   └── ZWCA_BLUEPRINT.md     # canonical architecture and roadmap
+├── tests/                    # scorer and runtime contract tests
+└── evals/                    # plugin artifact quality gates
 ```
 
-## Instalação
+## Installation
 
 ```bash
-claude plugin marketplace add /caminho/para/agent-finops
+claude plugin marketplace add /path/to/agent-finops
 claude plugin install agent-finops@agent-finops-marketplace
 ```
 
-A partir daí o hook de telemetria registra tool calls automaticamente. Os dados de tokens **reais** vêm do ingest de transcripts — não estimativa.
-
-Dependências opcionais das camadas de economia:
-```bash
-brew install ast-grep       # code-nav, safe-refactor
-pipx install headroom-ai    # compress
-```
-
-## Uso rápido
+Optional optimization dependencies:
 
 ```bash
-python3 store/ingest_transcripts.py                 # coleta usage real dos transcripts
-python3 scripts/cost_report.py --days 30 --by model # relatório
-python3 scripts/rightsizing.py                      # recomendações de economia
-python3 scripts/gate.py src/*.py                    # gate sintático
-python3 scripts/sync_registry.py <raiz> --owner eu  # inventário de agentes
-python3 dashboard/generate_dashboard.py             # dashboard HTML
+brew install ast-grep
+pipx install headroom-ai
 ```
 
-Ou pelas skills no Claude Code: `/cost-report`, `/rightsizing`, `/compress`, `/code-nav`, `/safe-refactor`, `/agent-gate`, `/dashboard`.
+Telemetry is stored locally in:
 
-## Camadas de economia (ordem de aplicação)
+```text
+~/.agent-finops/telemetry.db
+```
 
-1. **code-nav (AST)** — lê menos (busca estrutural em vez de arquivos inteiros)
-2. **compress (Headroom)** — comprime o que sobra (60–95% menos tokens)
-3. **rightsizing** — modelo certo p/ tarefa certa (Opus→Sonnet→Haiku), caching, batch
-4. Tudo medido no store e visível no `cost-report`/dashboard (tabela `savings`).
+No telemetry is sent to an external service by the plugin.
 
-## Agent OPS
+## Quick start
 
-- **Registry** de agentes com lifecycle `draft → validated → production → deprecated`
-- **agent-gate**: sintaxe (AST, determinístico) → testes → promoção
-- **agent-auditor**: inventário e conformidade dos agentes dos projetos
+### 1. Ingest real provider usage
+
+```bash
+python3 store/ingest_transcripts.py
+```
+
+### 2. Generate a cost report
+
+```bash
+python3 scripts/cost_report.py --days 30 --by model
+```
+
+### 3. Score an artifact
+
+```bash
+python3 scripts/zwca_score.py \
+  --ast-nodes 320 \
+  --dependency-depth 8 \
+  --transform-density 0.72 \
+  --branch-density 0.25 \
+  --external-systems 3 \
+  --unsupported-constructs 1
+```
+
+Example output:
+
+```json
+{
+  "score": 57.4,
+  "tier": "twilight",
+  "components": {
+    "ast_size": 18.2,
+    "dependency_depth": 10.0,
+    "transform_density": 12.0,
+    "branch_density": 7.2,
+    "external_systems": 6.0,
+    "unsupported_constructs": 4.0
+  }
+}
+```
+
+### 4. Run quality gates
+
+```bash
+python3 scripts/gate.py src/*.py
+```
+
+### 5. Generate the dashboard
+
+```bash
+python3 dashboard/generate_dashboard.py
+```
+
+Claude Code skills:
+
+```text
+/zwca
+/cost-report
+/rightsizing
+/compress
+/code-nav
+/safe-refactor
+/agent-gate
+/dashboard
+```
+
+## Waste Ledger
+
+The Waste Ledger is the audit contract for every runtime decision. Its schema is defined in [`schemas/waste-ledger.schema.json`](schemas/waste-ledger.schema.json).
+
+Core fields include:
+
+```json
+{
+  "artifact_id": "artifact-001",
+  "gate": "compression",
+  "decision": "admitted",
+  "complexity_score": 57.4,
+  "tier": "twilight",
+  "tokens_candidate": 42000,
+  "tokens_admitted": 7300,
+  "tokens_transmitted": 6900,
+  "tokens_rejected": 35100,
+  "cost_usd": 1.84,
+  "evidence_basis": "measured",
+  "quality_status": "passed"
+}
+```
+
+Savings evidence is explicitly classified as:
+
+- `measured` — provider usage or tokenizer measurement;
+- `estimated` — named estimator or pricing model;
+- `counterfactual` — reproducible baseline or A/B cohort.
+
+This prevents estimates from being presented as measured savings.
+
+## Target metrics
+
+| Metric | Target |
+|---|---:|
+| Deterministic operations | 25–35% |
+| Context reduction for LLM cases | ≥80% pilot |
+| Blended reduction | 85–90% |
+| Structural pass rate | ≥95% |
+| Cost per completed artifact | < US$50 |
+| Unaccounted token consumption | 0% |
+
+Targets are acceptance criteria, not current production claims. They must be measured against representative workloads and versioned baselines.
+
+## Delivery roadmap
+
+### Phase 0 — Conceptual unification
+
+- validate the dispatch matrix;
+- inventory deterministic operations;
+- establish the baseline corpus;
+- approve the Waste Ledger contract.
+
+### Phase 1 — Deterministic Floor and Context Plane
+
+- platform parsers and structural feature extraction;
+- persistent CCE index and cache;
+- deterministic admission harness;
+- platform-specific compression profiles.
+
+### Phase 2 — Decision Plane and enforcement
+
+- production RTK dispatch;
+- Guardian pre-call hard caps;
+- re-compress and approval exception paths;
+- AST-based output validation;
+- controlled A/B evaluation.
+
+### Phase 3 — Scale and institutionalization
+
+- continuous Waste Ledger coverage;
+- legacy file-read loop deprecation;
+- dashboard and drift alerts;
+- shared foundation packaging for AI factories and migration programs.
+
+## Design principles
+
+1. **Deterministic before probabilistic.**
+2. **No score, no call.**
+3. **Minimum sufficient context.**
+4. **Hard caps before provider calls.**
+5. **No unlimited retries or automatic frontier escalation.**
+6. **Quality and cost are evaluated together.**
+7. **Measured, estimated and counterfactual evidence never mix.**
+8. **Every admitted token must have an auditable purpose and outcome.**
+
+## Status
+
+The repository is currently at the **ZWCA foundation stage**. Core contracts, dispatch policy and deterministic scoring exist. The next vertical implementation slice is Guardian enforcement: SQLite Waste Ledger migration, pre-call interception, budget evaluation, re-compression fallback and dashboard integration.
+
+## License
+
+Add the project license before external distribution or production adoption.

@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import json
-import shutil
-import subprocess
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class CompressionError(RuntimeError):
@@ -25,32 +22,61 @@ class ConservativeCompressor:
 
 @dataclass
 class HeadroomCompressor:
-    command: str = "headroom"
-    timeout_seconds: int = 30
+    """Inline adapter for the installed Headroom Python SDK.
+
+    Headroom operates on message collections and returns a result containing
+    compressed messages plus measured compression metadata. The adapter keeps
+    the Guardian contract string-based while using Headroom's supported public
+    `compress()` API instead of an assumed CLI JSON contract.
+    """
+
+    model: str = "gpt-4o-mini"
+    protect_recent: int = 0
+    minimum_target_ratio: float = 0.05
 
     def compress(self, payload: str, target_tokens: int) -> str:
-        executable = shutil.which(self.command)
-        if executable is None:
-            raise CompressionError("Headroom executable not found")
-        request = json.dumps({"text": payload, "target_tokens": target_tokens})
-        proc = subprocess.run(
-            [executable, "compress", "--json"],
-            input=request,
-            text=True,
-            capture_output=True,
-            timeout=self.timeout_seconds,
-            check=False,
-        )
-        if proc.returncode != 0:
-            raise CompressionError(proc.stderr.strip() or "Headroom compression failed")
         try:
-            response = json.loads(proc.stdout)
-            compressed = response["text"]
-        except (json.JSONDecodeError, KeyError, TypeError) as exc:
-            raise CompressionError("invalid Headroom response") from exc
-        if not isinstance(compressed, str):
-            raise CompressionError("Headroom response text must be a string")
-        return compressed
+            from headroom import compress as headroom_compress
+        except ImportError as exc:
+            raise CompressionError(
+                'Headroom is not installed; run: pip install -r requirements-pilot.txt'
+            ) from exc
+
+        approximate_tokens = max(len(payload) // 4, 1)
+        target_ratio = min(
+            1.0,
+            max(self.minimum_target_ratio, target_tokens / approximate_tokens),
+        )
+        messages = [{"role": "user", "content": payload}]
+        try:
+            result: Any = headroom_compress(
+                messages,
+                model=self.model,
+                compress_user_messages=True,
+                target_ratio=target_ratio,
+                protect_recent=self.protect_recent,
+            )
+        except Exception as exc:
+            raise CompressionError(f"Headroom compression failed: {exc}") from exc
+
+        compressed_messages = getattr(result, "messages", None)
+        if not compressed_messages:
+            raise CompressionError("Headroom returned no compressed messages")
+
+        content = compressed_messages[-1].get("content")
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            text_parts = [
+                item.get("text", "")
+                for item in content
+                if isinstance(item, dict) and item.get("type") in {"text", "input_text"}
+            ]
+            return "\n".join(part for part in text_parts if part)
+        raise CompressionError("Headroom returned an unsupported message content type")
+
+    def __call__(self, payload: str, target_tokens: int) -> str:
+        return self.compress(payload, target_tokens)
 
 
 @dataclass

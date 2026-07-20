@@ -1,6 +1,6 @@
 {
   "name": "agent-finops",
-  "version": "0.1.0",
-  "description": "Agent OPS + FinOps: telemetria de custo, otimização (AST/Headroom) e quality gates para projetos com agentes IA",
+  "version": "0.2.0",
+  "description": "ZWCA Runtime: deterministic admission, context compression, model routing, token-budget enforcement and auditable Agent FinOps",
   "author": { "name": "juliopessan" }
 }

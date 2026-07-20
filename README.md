@@ -253,15 +253,6 @@ These are acceptance criteria, not current production claims.
 
 The repository now includes the **Guardian Enforcement Vertical** foundation. The runtime can persist gate events, block invalid calls, enforce artifact/session budgets, recompress oversized input and audit measured completion cost.
 
-The next slice is provider integration and operationalization:
-
-- load tier caps directly from `config/zwca-dispatch.yaml`;
-- replace conservative truncation with Headroom and AST-aware compression adapters;
-- integrate the hook with concrete provider SDKs and Claude Code hook configuration;
-- expose Waste Ledger aggregations in the dashboard;
-- add concurrent reservation semantics to prevent parallel budget overspend;
-- calibrate policies against the 545-artifact corpus.
-
 ## License
 
 Add the project license before external distribution or production adoption.

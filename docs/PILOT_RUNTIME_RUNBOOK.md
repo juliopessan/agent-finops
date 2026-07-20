@@ -27,7 +27,7 @@ python -c "import headroom, openai, yaml; print('imports: ok')"
 headroom --help
 ```
 
-The pilot pins `headroom-ai[all]==0.22.2` and supports OpenAI SDK versions from `1.54` up to, but not including, `3.0`.
+The pilot pins `headroom-ai[all]==0.32.1` and supports OpenAI SDK versions from `1.54` up to, but not including, `3.0`.
 
 ## Offline verification
 

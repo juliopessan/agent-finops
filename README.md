@@ -255,4 +255,4 @@ The repository now includes the **Guardian Enforcement Vertical** foundation. Th
 
 ## License
 
-Add the project license before external distribution or production adoption.
+MIT — see [LICENSE](LICENSE).

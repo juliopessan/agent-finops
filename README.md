@@ -100,36 +100,48 @@ flowchart TD
 
 ```text
 agent-finops/
-├── runtime/
+├── runtime/                     # CORE — standalone Python, no Claude Code dependency
 │   └── guardian.py              # enforcement engine
-├── hooks/
+├── hooks/                       # CORE
 │   └── pre_call_guardian.py     # stdin/stdout provider-call interceptor
-├── store/
+├── store/                       # CORE
 │   ├── waste_ledger.py          # persistence repository
 │   └── migrations/
 │       └── 002_waste_ledger.sql
-├── config/
+├── config/                      # CORE
 │   └── zwca-dispatch.yaml       # Thermal Gradient × RTK policy
-├── schemas/
+├── schemas/                     # CORE
 │   └── waste-ledger.schema.json
-├── scripts/
-│   ├── zwca_score.py
+├── scripts/                     # CORE, except zwca_score.py (project-specific)
+│   ├── zwca_score.py            # complexity scoring — rewrite per project, see docs/EXTENDING.md
 │   ├── cost_report.py
 │   ├── rightsizing.py
 │   └── gate.py
-├── skills/
+├── .claude-plugin/               # PLUGIN — Claude Code packaging over the core
+├── agents/                       # PLUGIN
+├── skills/                       # PLUGIN
 │   ├── zwca/
 │   ├── compress/
 │   ├── code-nav/
 │   ├── safe-refactor/
 │   └── agent-gate/
-├── dashboard/
+├── dashboard/                    # CORE
 ├── docs/
-│   └── ZWCA_BLUEPRINT.md
+│   ├── ZWCA_BLUEPRINT.md
+│   └── EXTENDING.md              # how to port the core into a new project
+├── CHANGELOG.md
 └── tests/
     ├── test_zwca_score.py
     └── test_guardian.py
 ```
+
+`runtime/`, `hooks/`, `store/`, `config/`, `schemas/`, `scripts/` (minus
+`zwca_score.py`) and `dashboard/` are the **core**: plain Python, installable
+and runnable without Claude Code. `.claude-plugin/`, `agents/` and `skills/`
+are the **plugin layer** that packages the core for Claude Code specifically.
+See [Installation](#installation) for both paths, and
+[`docs/EXTENDING.md`](docs/EXTENDING.md) for porting the core into a
+different project.
 
 ## Pre-call hook contract
 
@@ -206,19 +218,52 @@ Savings evidence remains separated into `measured`, `estimated` and `counterfact
 
 ## Installation
 
+The distribution technology is a **Claude Code plugin**, but the enforcement
+engine underneath (`runtime/`, `store/`, `hooks/`) is a standalone Python
+core with no dependency on Claude Code. Pick the path that matches your
+consumer.
+
+### Required core dependency
+
+`runtime/compressors.py` calls Headroom directly, and the Guardian
+enforcement path depends on it — this is **not optional**, install it
+before anything else:
+
+```bash
+pipx install headroom-ai
+```
+
+`brew install ast-grep` is optional and only needed for `scripts/gate.py`'s
+TypeScript/TSX syntax validation path.
+
+### Path A — as a Claude Code plugin
+
 ```bash
 claude plugin marketplace add /path/to/agent-finops
 claude plugin install agent-finops@agent-finops-marketplace
 ```
 
-Optional optimization dependencies:
+This wires up `agents/` and `skills/` so Claude Code can call the core
+through `${CLAUDE_PLUGIN_ROOT}`.
+
+### Path B — as a standalone Python runtime
+
+For non-Claude-Code consumers (another agent framework, a CI job, a plain
+service), install the core directly and drive it via the scripts and hooks
+under `runtime/`, `store/`, `hooks/` and `scripts/`:
 
 ```bash
-brew install ast-grep
-pipx install headroom-ai
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-pilot.txt   # includes headroom-ai, openai, anthropic
 ```
 
-Telemetry stays local by default:
+`hooks/pre_call_guardian.py` reads one JSON request from stdin and writes an
+allow/block decision to stdout — see [Pre-call hook contract](#pre-call-hook-contract).
+No Claude Code process is required for this path. See
+[`docs/EXTENDING.md`](docs/EXTENDING.md) for what's reusable as-is versus
+what needs to be rewritten per project.
+
+Telemetry stays local by default in both paths:
 
 ```text
 ~/.agent-finops/telemetry.db
@@ -247,11 +292,37 @@ python3 dashboard/generate_dashboard.py
 | Cost per completed artifact | < US$50 |
 | Unaccounted token consumption | 0% |
 
-These are acceptance criteria, not current production claims.
+These are acceptance criteria, not current production claims. They were
+calibrated against this repository's original legacy data-migration pilot
+(Informatica/DataStage/SSIS artifacts) — a different project should re-run
+its own Phase 0 baseline before adopting these numbers as targets. See
+[Extending to a new project](#extending-to-a-new-project).
 
 ## Current status
 
 The repository now includes the **Guardian Enforcement Vertical** foundation. The runtime can persist gate events, block invalid calls, enforce artifact/session budgets, recompress oversized input and audit measured completion cost.
+
+## Extending to a new project
+
+The core (`runtime/`, `store/`, `hooks/`, most of `scripts/`, `dashboard/`)
+is domain-agnostic and portable as-is. `scripts/zwca_score.py` and the
+migration-specific entries in `config/zwca-dispatch.yaml`'s
+`platform_profiles` are not — they encode structural features and
+compression strategies for the original pilot's artifact types.
+
+[`docs/EXTENDING.md`](docs/EXTENDING.md) documents exactly what's reusable
+versus what to rewrite, and proposes a package split
+(`agent-finops-core` + per-project extension point) for when the core is
+extracted for reuse across multiple projects.
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/); the
+version tracked in `.claude-plugin/plugin.json` is the source of truth.
+See [`CHANGELOG.md`](CHANGELOG.md) for release notes. Changes to
+`runtime/guardian.py`'s enforcement contract or the Waste Ledger schema are
+breaking changes for downstream consumers — pin to a tag/commit if you
+vendor these components into another project.
 
 ## License
 

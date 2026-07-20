@@ -89,6 +89,9 @@ tiers:
     approval_required: true
     fallback: human_review
 
+# Default, domain-agnostic profiles. Every consuming project gets these
+# out of the box; `generic_code` is the fallback when no artifact-specific
+# profile matches.
 platform_profiles:
   generic_code:
     context_strategy: ast_symbols_dependencies
@@ -96,6 +99,11 @@ platform_profiles:
   sql:
     context_strategy: schema_symbols_query_graph
     compression_floor_pct: 82
+
+  # Example domain extension — legacy data-migration pilot (Informatica,
+  # DataStage, SSIS). Not required by the core runtime; kept here as a
+  # worked example of adding project-specific profiles. See
+  # docs/EXTENDING.md before copying this pattern into a new project.
   informatica_xml:
     context_strategy: workflow_graph_and_expression_nodes
     compression_floor_pct: 68

@@ -1,0 +1,87 @@
+name: Pilot Runtime
+
+on:
+  pull_request:
+    paths:
+      - "runtime/**"
+      - "store/**"
+      - "scripts/verify_pilot_runtime.py"
+      - "tests/**"
+      - "requirements-pilot.txt"
+      - ".github/workflows/pilot-runtime.yml"
+  workflow_dispatch:
+    inputs:
+      run_live_openai:
+        description: "Run the live OpenAI smoke test when OPENAI_API_KEY is configured"
+        required: false
+        default: false
+        type: boolean
+      run_live_anthropic:
+        description: "Run the live Anthropic smoke test when ANTHROPIC_API_KEY is configured"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  offline-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-pilot.txt
+      - name: Install pilot dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements-pilot.txt
+      - name: Verify installed versions
+        run: |
+          python -c "import headroom, openai, anthropic, yaml; print('headroom import: ok'); print('openai:', openai.__version__); print('anthropic:', anthropic.__version__); print('yaml:', yaml.__version__)"
+          headroom --help
+      - name: Run tests
+        run: python -m pytest tests
+      - name: Run Headroom compression smoke test
+        run: python scripts/verify_pilot_runtime.py
+
+  live-openai:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_live_openai && secrets.OPENAI_API_KEY != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-pilot.txt
+      - run: pip install -r requirements-pilot.txt
+      - name: Run live OpenAI Responses smoke test
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_SMOKE_MODEL: ${{ vars.OPENAI_SMOKE_MODEL || 'gpt-4o-mini' }}
+          OPENAI_INPUT_PRICE_PER_MILLION: ${{ vars.OPENAI_INPUT_PRICE_PER_MILLION || '0' }}
+          OPENAI_OUTPUT_PRICE_PER_MILLION: ${{ vars.OPENAI_OUTPUT_PRICE_PER_MILLION || '0' }}
+        run: python scripts/verify_pilot_runtime.py --live-openai
+
+  live-anthropic:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_live_anthropic && secrets.ANTHROPIC_API_KEY != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-pilot.txt
+      - run: pip install -r requirements-pilot.txt
+      - name: Run live Anthropic Messages smoke test
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_SMOKE_MODEL: ${{ vars.ANTHROPIC_SMOKE_MODEL || 'claude-sonnet-4-20250514' }}
+          ANTHROPIC_INPUT_PRICE_PER_MILLION: ${{ vars.ANTHROPIC_INPUT_PRICE_PER_MILLION || '0' }}
+          ANTHROPIC_OUTPUT_PRICE_PER_MILLION: ${{ vars.ANTHROPIC_OUTPUT_PRICE_PER_MILLION || '0' }}
+          ANTHROPIC_CACHE_WRITE_PRICE_PER_MILLION: ${{ vars.ANTHROPIC_CACHE_WRITE_PRICE_PER_MILLION || '0' }}
+          ANTHROPIC_CACHE_READ_PRICE_PER_MILLION: ${{ vars.ANTHROPIC_CACHE_READ_PRICE_PER_MILLION || '0' }}
+        run: python scripts/verify_pilot_runtime.py --live-anthropic

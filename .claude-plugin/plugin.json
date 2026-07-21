@@ -1,6 +1,6 @@
 {
   "name": "agent-finops",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "ZWCA Runtime: deterministic admission, context compression, model routing, token-budget enforcement and auditable Agent FinOps",
   "author": { "name": "juliopessan" }
 }

@@ -8,6 +8,23 @@ The version tracked here matches `.claude-plugin/plugin.json`.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-21
+
+### Added
+- `store/decision_log.py` (`zwca_decisions` table, migration `004`): Memory
+  bucket — a durable decision log distinct from documentation. Recording a
+  decision with `supersedes_decision_id` automatically closes the prior
+  decision out.
+- `store/change_history.py` (`zwca_artifact_changes` table, migration
+  `005`): Change History bucket — artifacts evolve through deltas, not full
+  rewrites. Every change declares a `measured`/`estimated`/`counterfactual`
+  evidence basis, the same discipline the Waste Ledger applies to savings
+  claims.
+- `schemas/decision-log.schema.json`, `schemas/change-history.schema.json`.
+- `tests/test_decision_log.py`, `tests/test_change_history.py`.
+- README: new "Memory and Change History" section; `docs/ZWCA_BLUEPRINT.md`
+  Plane 4 and Waste Ledger sections updated to describe both buckets.
+
 ## [0.3.0] - 2026-07-20
 
 ### Changed

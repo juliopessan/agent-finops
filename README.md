@@ -13,7 +13,7 @@ ZWCA does not promise zero token usage. It targets **zero unjustified or unaccou
 ```text
 ┌──────────────────────────────────────────────────────────────┐
 │  PLANE 4 — GOVERNANCE & OBSERVABILITY                       │
-│  Budget enforcement · Waste Ledger · Drift alerts · FinOps  │
+│  Budget · Waste Ledger · Decision Log · Change History      │
 ├──────────────────────────────────────────────────────────────┤
 │  PLANE 3 — DECISION                                          │
 │  Complexity score · Thermal tier · Model routing · Approval  │
@@ -106,12 +106,18 @@ agent-finops/
 │   └── pre_call_guardian.py     # stdin/stdout provider-call interceptor
 ├── store/                       # CORE
 │   ├── waste_ledger.py          # persistence repository
+│   ├── decision_log.py          # Memory bucket — decisions, not documentation
+│   ├── change_history.py        # Change History bucket — artifact deltas, not rewrites
 │   └── migrations/
-│       └── 002_waste_ledger.sql
+│       ├── 002_waste_ledger.sql
+│       ├── 004_decision_log.sql
+│       └── 005_change_history.sql
 ├── config/                      # CORE
 │   └── zwca-dispatch.yaml       # Thermal Gradient × RTK policy
 ├── schemas/                     # CORE
-│   └── waste-ledger.schema.json
+│   ├── waste-ledger.schema.json
+│   ├── decision-log.schema.json
+│   └── change-history.schema.json
 ├── scripts/                     # CORE, except zwca_score.py (project-specific)
 │   ├── zwca_score.py            # complexity scoring — rewrite per project, see docs/EXTENDING.md
 │   ├── cost_report.py
@@ -132,7 +138,9 @@ agent-finops/
 ├── CHANGELOG.md
 └── tests/
     ├── test_zwca_score.py
-    └── test_guardian.py
+    ├── test_guardian.py
+    ├── test_decision_log.py
+    └── test_change_history.py
 ```
 
 `runtime/`, `hooks/`, `store/`, `config/`, `schemas/`, `scripts/` (minus
@@ -215,6 +223,62 @@ Events use explicit reason codes such as:
 - `CALL_COMPLETED`.
 
 Savings evidence remains separated into `measured`, `estimated` and `counterfactual`.
+
+## Memory and Change History
+
+Two buckets sit alongside the Waste Ledger for the parts of a workload that
+aren't token spend: decisions and artifact evolution.
+
+**Decision Log** (`store/decision_log.py`, `zwca_decisions` table) is memory,
+not documentation — a durable record of what was decided and why, not a
+document that describes it. Recording a decision with `supersedes_decision_id`
+automatically closes the prior decision out, so `current()` always reflects
+only the decisions still in force for a project.
+
+```python
+from store.decision_log import Decision, DecisionLog
+
+log = DecisionLog("~/.agent-finops/telemetry.db")
+log.migrate()
+log.record(Decision(
+    project_id="allianz",
+    decision="Use Fabric Warehouse",
+    reason="Lower operating cost",
+    decided_by="architecture-board",
+))
+```
+
+**Change History** (`store/change_history.py`, `zwca_artifact_changes` table)
+records how artifacts (assessments, ROMs, ADRs) evolve as patches, not
+snapshots: each entry is a delta between two versions, not the artifact
+rewritten in full. Every entry declares an `evidence_basis`
+(`measured`/`estimated`/`counterfactual`), the same discipline the Waste
+Ledger applies to savings claims, so "the ROM grew 20%" is always traceable
+to what actually changed instead of guessed after the fact.
+
+```python
+from store.change_history import ArtifactChange, ChangeHistory
+
+history = ChangeHistory("~/.agent-finops/telemetry.db")
+history.migrate()
+history.record(ArtifactChange(
+    project_id="allianz",
+    artifact_id="rom-1",
+    artifact_type="rom",
+    from_version="1.0",
+    to_version="1.1",
+    change_summary="added SAP dependency, automation coverage dropped 80% -> 55%",
+    affected_objects=["Z_SALES_REPORT"],
+    evidence_basis="measured",
+))
+```
+
+Both tables live in the same local SQLite store as the Waste Ledger
+(`~/.agent-finops/telemetry.db` by default) and follow the same enforcement
+posture: no unvalidated status values (`Decision.status`,
+`ArtifactChange.evidence_basis` reject anything outside their enum), and
+schemas published at `schemas/decision-log.schema.json` and
+`schemas/change-history.schema.json`.
 
 ## Installation
 

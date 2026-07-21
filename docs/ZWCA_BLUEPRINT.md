@@ -73,7 +73,14 @@ Token Guardian becomes an enforcement point rather than a reporting surface:
 - explicit escalation for exceptions;
 - post-call value accounting;
 - drift alerts;
-- immutable Waste Ledger events.
+- immutable Waste Ledger events;
+- Decision Log — durable record of decisions and why they were made, distinct
+  from documentation and closed out automatically when superseded
+  (`store/decision_log.py`);
+- Change History — artifacts evolve through patches, not rewrites; every
+  delta declares `measured`/`estimated`/`counterfactual` evidence, so a
+  question like "why did the ROM grow 20%?" is answerable from the ledger
+  instead of reconstructed from memory (`store/change_history.py`).
 
 ## Three gates
 
@@ -133,6 +140,13 @@ The ledger records both avoided and consumed work. Avoided tokens are not hypoth
 - `measured`: derived from provider usage or tokenizer output;
 - `estimated`: derived from a declared estimator;
 - `counterfactual`: baseline comparison from an A/B cohort.
+
+The same three-way distinction applies to Change History
+(`schemas/change-history.schema.json`) — a claim that an artifact grew or
+shrank must say which of the three it is, exactly like a token-savings claim.
+Decisions (`schemas/decision-log.schema.json`) don't carry an evidence basis
+of their own; they are the reason a change or a cost was incurred, not a
+savings claim.
 
 This prevents inflated savings claims.
 
